@@ -6,10 +6,15 @@
 //  Copyright (c) 2012 Xuzz Productions, LLC. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
+#import <EventKit/EventKit.h>
 
-@interface XCRootViewController : UIViewController <UIPageViewControllerDelegate>
+@interface XCRootViewController : UIPageViewController <UIPageViewControllerDelegate, UIPageViewControllerDataSource>
 
-@property (strong, nonatomic) UIPageViewController *pageViewController;
+- (id)initWithEventStore:(EKEventStore *)store;
+- (void)calendarAccessGranted;
+
+@property (nonatomic, retain) EKEventStore *store;
+
+@property (nonatomic, assign) BOOL scrollEnabled;
 
 @end
