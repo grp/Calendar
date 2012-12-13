@@ -150,8 +150,8 @@
     self.creationView.frame = creationFrame;
 
     CGRect handleFrame = CGRectZero;
-    handleFrame.size.width = 125.0f;
-    handleFrame.size.height = 80.0f;
+    handleFrame.size.width = 80.0f;
+    handleFrame.size.height = 50.0f;
     handleFrame.origin.x = edgeMargins + contentWidth - handleFrame.size.width;
     handleFrame.origin.y = (topMargin - handleFrame.size.height) / 2 + 10.0f;
     self.grabHandle.frame = handleFrame;
@@ -211,6 +211,7 @@
     self.expandedEventView.transform = CGAffineTransformIdentity;
     self.expandedEventView.frame = [self.view convertRect:self.expandedEventViewInitialFrame toView:self.expandedEventCell];
     [self.expandedEventCell addSubview:self.expandedEventView];
+    [self.expandedEventCell setNeedsLayout];
 
     self.expandedEventView.expanded = NO;
 
@@ -262,6 +263,7 @@
 
     CGRect bounds = self.expandedEventView.bounds;
     bounds.size.height = initialHeight + self.gestureProgress * (endHeight - initialHeight);
+    bounds.size.height = (bounds.size.height < 0 ? 0 : bounds.size.height);
     self.expandedEventView.bounds = bounds;
 
     self.tableView.alpha = self.expandOutward ? (1.0 - self.gestureProgress) : self.gestureProgress;
@@ -281,6 +283,11 @@
     self.expandedEventView.interactive = NO;
 
     [self setGestureProgress:0];
+}
+
+- (void)toggleExpandedView:(XCEventView *)view {
+    [self startGestureInView:view];
+    [self finishGestureWithVelocity:0];
 }
 
 - (void)finishGestureWithVelocity:(CGFloat)velocity {
@@ -435,13 +442,18 @@
 
     [self.store saveEvent:event span:EKSpanThisEvent commit:YES error:nil];
 
+    if (self.expandedEventView != nil) {
+        [self toggleExpandedView:self.expandedEventView];
+    }
+
     NSInteger row = [self.events indexOfObject:event inSortedRange:NSMakeRange(0, self.events.count) options:NSBinarySearchingInsertionIndex usingComparator:^(EKEvent *a, EKEvent *b) {
         return [a compareStartDateWithEvent:b];
     }];
     
     NSMutableArray *events = [[self.events mutableCopy] autorelease];
+    events = events ?: [NSMutableArray array];
     [events insertObject:event atIndex:row];
-    self.events = [[events copy] autorelease];;
+    self.events = [[events copy] autorelease];
 
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
 
@@ -519,8 +531,11 @@
     XCEventView *eventView = cell.eventView;
     cell.highlighted = NO;
 
-    [self startGestureInView:eventView];
-    [self finishGestureWithVelocity:0];
+    [self toggleExpandedView:eventView];
+}
+
+- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation {
+    [self.delegate dayViewControllerWantsRepresentAfterRotation:self];
 }
 
 @end

@@ -271,7 +271,6 @@
 		7DFF8FE0166F17A1004281E9 /* Day */ = {
 			isa = PBXGroup;
 			children = (
-				7DFF8FF01673083B004281E9 /* XCEventTableViewCell.h */,
 				7D7CEC7E167586530022D022 /* XCGrabHandleView.h */,
 				7D7CEC7F167586530022D022 /* XCGrabHandleView.m */,
 				7DFF8FF3167323B7004281E9 /* XCEventCreationView.h */,
@@ -289,6 +288,7 @@
 				7D7CEC7C167538170022D022 /* XCBaseEventView.m */,
 				7DFF8FED1673057D004281E9 /* XCEventView.h */,
 				7DFF8FEE1673057D004281E9 /* XCEventView.m */,
+				7DFF8FF01673083B004281E9 /* XCEventTableViewCell.h */,
 				7DFF8FF11673083C004281E9 /* XCEventTableViewCell.m */,
 			);
 			name = "Event View";

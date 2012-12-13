@@ -23,5 +23,6 @@
 
 - (UIView *)dayViewController:(XCDayViewController *)dayViewController viewForGestureRecognizer:(UIPanGestureRecognizer *)recognizer;
 - (void)dayViewController:(XCDayViewController *)dayViewController panFromGestureRecognizer:(UIPanGestureRecognizer *)recognizer;
+- (void)dayViewControllerWantsRepresentAfterRotation:(XCDayViewController *)dayViewController;
 
 @end

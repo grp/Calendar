@@ -42,6 +42,8 @@
 @property (nonatomic, retain) XCDayViewController *presentingDayViewController;
 @property (nonatomic, assign) BOOL presentingDirectionIn;
 
+@property (nonatomic, assign) BOOL appearedOnce;
+
 @end
 
 @implementation XCMonthViewController
@@ -116,13 +118,7 @@
     self.flowLayout.minimumLineSpacing = (1.0f / [[UIScreen mainScreen] scale]);
     [self.flowLayout release];
 
-    CGRect collectionFrame = CGRectZero;
-    collectionFrame.size.width = self.itemSize.width * [self daysInWeek] + self.flowLayout.minimumInteritemSpacing * ([self daysInWeek] - 1);
-    collectionFrame.size.height = self.itemSize.height * [self rows] + self.flowLayout.minimumLineSpacing * ([self rows] - 1) + self.headerSize.height;
-    collectionFrame.origin.x = self.view.bounds.size.width - collectionFrame.size.width - 80;
-    collectionFrame.origin.y = 185;
-    
-    self.collectionView = [[UICollectionView alloc] initWithFrame:collectionFrame collectionViewLayout:self.flowLayout];
+    self.collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:self.flowLayout];
     self.collectionView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin);
     
     self.collectionView.delegate = self;
@@ -137,13 +133,7 @@
     [self.view addSubview:self.collectionView];
     [self.collectionView release];
 
-    CGRect tableFrame = CGRectZero;
-    tableFrame.origin.x = 80;
-    tableFrame.origin.y = collectionFrame.origin.y;
-    tableFrame.size.width = collectionFrame.origin.x - tableFrame.origin.x - 30;
-    tableFrame.size.height = collectionFrame.size.height;
-
-    self.tableView = [[UITableView alloc] initWithFrame:tableFrame style:UITableViewStylePlain];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.showsVerticalScrollIndicator = NO;
     self.tableView.autoresizingMask = (UIViewAutoresizingFlexibleWidth);
 
@@ -159,7 +149,6 @@
 
     self.monthLabel = [[UILabel alloc] init];
     self.monthLabel.font = [UIFont lightSystemFontOfSize:72.0f];
-    self.monthLabel.frame = CGRectMake(80, 165 - 100 + self.monthLabel.font.descender, 400, 100);
     self.monthLabel.textAlignment = NSTextAlignmentLeft;
     self.monthLabel.textColor = [UIColor colorWithWhite:0.474f alpha:1.0f];
     [self.view addSubview:self.monthLabel];
@@ -167,11 +156,34 @@
 
     self.relativeLabel = [[UILabel alloc] init];
     self.relativeLabel.font = [UIFont lightSystemFontOfSize:60.0f];
-    self.relativeLabel.frame = CGRectMake(1024 - 80 - 400, 165 - 100 + self.relativeLabel.font.descender, 400, 100);
     self.relativeLabel.textAlignment = NSTextAlignmentRight;
     self.relativeLabel.textColor = [UIColor colorWithWhite:0.663f alpha:1.0f];
     [self.view addSubview:self.relativeLabel];
     [self.relativeLabel release];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+
+    CGFloat horizontalInset = 80;
+
+    CGRect collectionFrame = CGRectZero;
+    collectionFrame.size.width = self.itemSize.width * [self daysInWeek] + self.flowLayout.minimumInteritemSpacing * ([self daysInWeek] - 1);
+    collectionFrame.size.height = self.itemSize.height * [self rows] + self.flowLayout.minimumLineSpacing * ([self rows] - 1) + self.headerSize.height;
+    collectionFrame.origin.x = self.view.bounds.size.width - collectionFrame.size.width - horizontalInset;
+    collectionFrame.origin.y = 185;
+    self.collectionView.frame = collectionFrame;
+
+    CGRect tableFrame = CGRectZero;
+    tableFrame.origin.x = horizontalInset;
+    tableFrame.origin.y = collectionFrame.origin.y;
+    tableFrame.size.width = collectionFrame.origin.x - tableFrame.origin.x - 30;
+    tableFrame.size.height = collectionFrame.size.height;
+    self.tableView.frame = tableFrame;
+
+    CGFloat labelWidth = (self.view.bounds.size.width - horizontalInset - horizontalInset) / 2;
+    self.monthLabel.frame = CGRectMake(horizontalInset, 165 - 100 + self.monthLabel.font.descender, labelWidth, 100);
+    self.relativeLabel.frame = CGRectMake(self.view.bounds.size.width - horizontalInset - labelWidth, 165 - 100 + self.relativeLabel.font.descender, labelWidth, 100);
 }
 
 - (void)viewDidLoad {
@@ -184,6 +196,26 @@
     [super viewDidAppear:animated];
 
     [self.collectionView flashScrollIndicators];
+
+    if (!self.appearedOnce) {
+        self.appearedOnce = YES;
+        [self.tableView reloadData];
+
+        NSInteger index = [self.events indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+            EKEvent *event = obj;
+
+            return [event.startDate compare:[NSDate date]] == NSOrderedDescending;
+        }];
+
+        if (index != NSNotFound) {
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+            [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionNone animated:NO];
+
+            if (self.tableView.contentOffset.y + self.tableView.bounds.size.height > self.tableView.contentSize.height) {
+                self.tableView.contentOffset = CGPointMake(0, self.tableView.contentSize.height - self.tableView.bounds.size.height);
+            }
+        }
+    }
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
@@ -297,8 +329,6 @@
     }
 }
 
-// THIS IS BUGGY FIXME
-
 - (UIView *)dayViewController:(XCDayViewController *)dayViewController viewForGestureRecognizer:(UIPanGestureRecognizer *)recognizer {
     return self.view.window;
 }
@@ -335,7 +365,7 @@
             CGPoint center = [self.view convertPoint:self.presentingDayCell.center fromView:self.presentingDayCell.superview];
 
             CGRect frame = self.presentingDayViewController.view.frame;
-            self.presentingDayViewController.view.layer.anchorPoint = CGPointMake(center.x / self.view.bounds.size.width, center.y / self.view.bounds.size.height);
+            self.presentingDayViewController.view.center = center;
             self.presentingDayViewController.view.frame = frame;
 
             CGPoint toCenter = self.presentingDayViewController.view.center;
@@ -345,29 +375,23 @@
             CGFloat scaledVelocity = (velocity.y / self.view.bounds.size.height);
 
             XNAnimation *animation = [XNAnimation animationWithKeyPath:@"transform.scale.x"];
-            animation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:273 damping:30 mass:1.0f];
+            animation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:200 damping:20 mass:1.0f];
             animation.velocity = [NSNumber numberWithFloat:scaledVelocity];
             animation.toValue = [NSNumber numberWithFloat:scale.x];
             [self.presentingDayViewController.view addXNAnimation:animation];
 
             animation = [XNAnimation animationWithKeyPath:@"transform.scale.y"];
-            animation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:273 damping:30 mass:1.0f];
+            animation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:200 damping:20 mass:1.0f];
             animation.velocity = [NSNumber numberWithFloat:scaledVelocity];
             animation.toValue = [NSNumber numberWithFloat:scale.y];
             [self.presentingDayViewController.view addXNAnimation:animation];
 
-            animation = [XNAnimation animationWithKeyPath:@"center"];
-            animation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:100 damping:16 mass:1.0f];
-            animation.velocity = [NSValue valueWithCGPoint:velocity];
-            animation.toValue = [NSValue valueWithCGPoint:toCenter];
-            [self.presentingDayViewController.view addXNAnimation:animation];
-
-            animation = [XNAnimation animationWithKeyPath:@"alpha"];
-            animation.delegate = self;
-            animation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:30 damping:8 mass:1.0f];
-            animation.velocity = [NSNumber numberWithFloat:0];
-            animation.toValue = [NSNumber numberWithFloat:0.0];
-            [self.presentingDayViewController.view addXNAnimation:animation];
+            XNAnimation *centerAnimation = [XNAnimation animationWithKeyPath:@"center"];
+            centerAnimation.delegate = self;
+            centerAnimation.timingFunction = [XNSpringTimingFunction timingFunctionWithTension:200 damping:20 mass:1.0f];
+            centerAnimation.velocity = [NSValue valueWithCGPoint:velocity];
+            centerAnimation.toValue = [NSValue valueWithCGPoint:toCenter];
+            [self.presentingDayViewController.view addXNAnimation:centerAnimation];
         }
     }
 }
@@ -377,6 +401,13 @@
         if (self.presentedViewController == nil) {
             self.presentingDayViewController.view.frame = self.view.bounds;
             [self presentViewController:self.presentingDayViewController animated:NO completion:NULL];
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.presentingDayViewController.view removeAllXNAnimations];
+            });
+
+            XCRootViewController *root = (XCRootViewController *) self.parentViewController;
+            root.scrollEnabled = YES;
         }
     } else {
         [self.presentingDayViewController.view removeFromSuperview];
@@ -384,12 +415,19 @@
     }
 }
 
+- (void)dayViewControllerWantsRepresentAfterRotation:(XCDayViewController *)dayViewController {
+    [self dismissViewControllerAnimated:NO completion:NULL];
+    [self.view addSubview:self.presentingDayViewController.view];
+    self.presentingDayViewController.view.frame = self.view.bounds;
+    [self presentViewController:self.presentingDayViewController animated:NO completion:NULL];
+}
+
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 1) {
         self.presentingDayCell = (id) [self.collectionView cellForItemAtIndexPath:indexPath];
         CGPoint center = [self.view convertPoint:self.presentingDayCell.center fromView:self.presentingDayCell.superview];
 
-        [self.presentingDayViewController removeAllXNAnimations];
+        [self.presentingDayViewController.view removeAllXNAnimations];
 
         self.presentingDayViewController = [[XCDayViewController alloc] initWithDate:self.presentingDayCell.date events:self.presentingDayCell.events store:self.store];
         self.presentingDayViewController.delegate = self;
@@ -402,12 +440,15 @@
 
         self.presentingDirectionIn = YES;
 
-        XNSpringTimingFunction *timingFunction = [XNSpringTimingFunction timingFunctionWithTension:40 damping:10 mass:1.0];
+        XCRootViewController *root = (XCRootViewController *) self.parentViewController;
+        root.scrollEnabled = NO;
+
+        XNSpringTimingFunction *timingFunction = [XNSpringTimingFunction timingFunctionWithTension:273 damping:35 mass:0.02];
 
         XNAnimation *animation = [XNAnimation animationWithKeyPath:@"transform.scale.x"];
         animation.delegate = self;
         animation.timingFunction = timingFunction;
-        animation.velocity = [NSNumber numberWithFloat:0];
+        animation.velocity = [NSNumber numberWithFloat:5.0];
         animation.fromValue = [NSNumber numberWithFloat:scale.x];
         animation.toValue = [NSNumber numberWithFloat:1.0];
         [self.presentingDayViewController.view addXNAnimation:animation];
@@ -415,19 +456,11 @@
         animation = [XNAnimation animationWithKeyPath:@"transform.scale.y"];
         animation.delegate = self;
         animation.timingFunction = timingFunction;
-        animation.velocity = [NSNumber numberWithFloat:0];
+        animation.velocity = [NSNumber numberWithFloat:5.0];
         animation.fromValue = [NSNumber numberWithFloat:scale.y];
-        animation.toValue = [NSNumber numberWithFloat:1.0];
-        [self.presentingDayViewController.view addXNAnimation:animation];
-
-        animation = [XNAnimation animationWithKeyPath:@"alpha"];
-        animation.timingFunction = timingFunction;
-        animation.velocity = [NSNumber numberWithFloat:0];
         animation.toValue = [NSNumber numberWithFloat:1.0];
         [self.presentingDayViewController.view addXNAnimation:animation];
     }
 }
-
-// END SUPER BUGGY SECTION THAT NEEDS FIXING
 
 @end

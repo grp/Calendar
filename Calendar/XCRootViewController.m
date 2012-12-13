@@ -31,6 +31,18 @@
     return self;
 }
 
+- (void)setScrollEnabled:(BOOL)scrollEnabled {
+    _scrollEnabled = scrollEnabled;
+
+    for (UIView *view in self.view.subviews) {
+        if ([view isKindOfClass:[UIScrollView class]]) {
+            UIScrollView *scrollView = (UIScrollView *) view;
+
+            scrollView.scrollEnabled = self.scrollEnabled;
+        }
+    }
+}
+
 - (void)dealloc {
     [super dealloc];
 }
@@ -58,10 +70,6 @@
     XCMonthViewController *monthViewController = [[XCMonthViewController alloc] initWithStore:self.store date:date];
     [monthViewController autorelease];
     return monthViewController;
-}
-
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
-    return self.scrollEnabled;
 }
 
 - (void)setViewControllers:(NSArray *)viewControllers direction:(UIPageViewControllerNavigationDirection)direction animated:(BOOL)animated completion:(void (^)(BOOL))completion {

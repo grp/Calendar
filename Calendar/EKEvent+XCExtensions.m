@@ -12,11 +12,11 @@
 @implementation EKEvent (XCExtensions)
 
 - (BOOL)isCompleted {
-    return [self.title hasPrefix:@"DONE: "];
+    return [self.title hasPrefix:@"DONE: "] || !self.allDay;
 }
 
 - (void)setCompleted:(BOOL)completed {
-    if (completed == self.completed) {
+    if (completed == self.completed || !self.allDay) {
         return;
     }
 
@@ -65,7 +65,7 @@
 - (NSString *)displayTitle {
     NSString *title = self.title;
 
-    if (self.completed) {
+    if ([self.title hasPrefix:@"DONE: "]) {
         title = [title substringFromIndex:[@"DONE: " length]];
     }
 
@@ -79,22 +79,22 @@
 + (UIColor *)displayColorForCompleted:(BOOL)completed dueDate:(EKXCEventDueDate)due {
     if (completed) {
         if (due == kEKXCEventDueDatePast) {
-            return [UIColor colorWithRed:0.6f green:0.75f blue:0.6f alpha:1.0f];
+            return [UIColor colorWithRed:0.7f green:0.7f blue:0.7f alpha:1.0f];
         } else if (due == kEKXCEventDueDateCurrent) {
             return [UIColor colorWithRed:0.2f green:0.55f blue:0.2f alpha:1.0f];
         } else if (due == kEKXCEventDueDateFuture) {
-            return [UIColor colorWithRed:0.6f green:0.75f blue:0.6f alpha:1.0f];
+            return [UIColor colorWithRed:0.2f green:0.55f blue:0.2f alpha:1.0f];
         } else {
             [NSException raise:@"EKEvent+XCExtensionsInvalidDueDateException" format:@"invalid due date"];
             return nil;
         }
     } else {
         if (due == kEKXCEventDueDatePast) {
-            return [UIColor colorWithRed:0.85f green:0.15f blue:0.15f alpha:1.0f];
+            return [UIColor colorWithRed:0.7f green:0.0f blue:0.0f alpha:1.0f];
         } else if (due == kEKXCEventDueDateCurrent) {
-            return [UIColor colorWithRed:0.55f green:0.2f blue:0.2f alpha:1.0f];
+            return [UIColor colorWithRed:0.7f green:0.0f blue:0.0f alpha:1.0f];
         } else if (due == kEKXCEventDueDateFuture) {
-            return [UIColor colorWithRed:0.75f green:0.6f blue:0.6f alpha:1.0f];
+            return [UIColor colorWithRed:0.45f green:0.45f blue:0.5f alpha:1.0f];
         } else {
             [NSException raise:@"EKEvent+XCExtensionsInvalidDueDateException" format:@"invalid due date"];
             return nil;
